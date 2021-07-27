@@ -1,0 +1,82 @@
+sudo su 
+yum update -y
+
+amazon-linux-extras install -y docker 
+gpasswd -a ec2-user docker 
+
+//disconnet and connect again 
+systemctl enable --now docker 
+systemctl status docker 
+
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+
+
+mv /home/ec2-user/kubectl /usr/bin/
+
+yum install conntrack
+sudo install minikube-linux-amd64 /usr/bin/minikube
+minikube start --vm-driver=none
+
+
+
+minikube status
+
+minikube addons list
+minikube addons enable dashboard
+minikube dashboard --url
+
+http://13.235.91.43:41713/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/
+
+
+sudo vi /etc/kubernetes/manifests/kube-scheduler.yaml // Clear the line (spec->containers->command) containing this phrase: - --port=0
+sudo vi /etc/kubernetes/manifests/kube-controller-manager.yaml //Clear the line (spec->containers->command) containing this phrase: - --port=0
+sudo systemctl restart kubelet.service
+
+
+systemctl start kubelet.service
+
+
+kubectl version 
+kubectl get componentstatuses //Master Component Status 
+kubectl get pods --all-namespaces
+
+kubectl delete all -l app=user
+
+//Getter
+kubectl get service
+kubectl get events --sort-by=.metadata.creationTimestamp
+kubectl get pods -o wide
+kubectl get replicaset
+kubectl get deployment
+kubectl get service
+
+
+//Create & Deploy Pods
+kubectl create deployment user --image=saidharmareddy/user
+kubectl expose deployment user --type=LoadBalancer --port=3004
+
+
+//Apply YML
+kubectl diff -f deployment.yaml
+kubectl apply -f deployment.yaml
+
+//Config Map
+kubectl create configmap user --from-literal=CURRENCY_EXCHANGE_URI=http://user
+kubectl get configmap
+kubectl get configmap user -o yaml >> configmap.yaml
+
+//roll out
+kubectl rollout history deployment user
+kubectl rollout undo deployment user --to-revision=1
+
+//Scaling
+kubectl scale deployment user --replicas=3
+kubectl autoscale deployment user --min=1 --max=3 --cpu-percent=5 
+kubectl get hpa                     //Horizonatal Pod Auto Scaler 
+kubectl top pod	    				//Memory and CPU Utilization
+kubectl delete hpa user             //Delete Auto Scale
+
+
